@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>患者さん向け説明書AI</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif; background: #f5f7fa; min-height: 100vh; color: #1a2332; line-height: 1.65; }
+
+/* Header */
+.header { background: linear-gradient(135deg, #b45309 0%, #0d6e63 100%); color: white; padding: 16px 20px; position: sticky; top: 0; z-index: 20; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.header-row { display: flex; align-items: center; justify-content: space-between; max-width: 820px; margin: 0 auto; }
+.header-title { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.header-sub { font-size: 11px; opacity: 0.78; margin-top: 2px; letter-spacing: 0.04em; }
+
+.container { max-width: 820px; margin: 0 auto; padding: 1rem; }
+
+/* Notice */
+.notice { background: #fffbeb; border: 0.5px solid #fde68a; border-left: 3px solid #f59e0b; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #78350f; margin-bottom: 1rem; line-height: 1.7; }
+.notice b { color: #92400e; }
+
+/* Settings panel */
+.settings-panel { background: white; border-radius: 10px; border: 0.5px solid #e2e8f0; margin-bottom: 1rem; overflow: hidden; }
+.settings-panel summary { padding: 12px 16px; font-size: 13px; font-weight: 500; color: #475569; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; user-select: none; }
+.settings-panel summary::-webkit-details-marker { display: none; }
+.settings-panel summary::after { content: '▼'; font-size: 9px; color: #94a3b8; margin-left: auto; transition: transform 0.2s; }
+.settings-panel[open] summary::after { transform: rotate(180deg); }
+.settings-body { padding: 0 16px 16px; border-top: 0.5px solid #f1f5f9; }
+.settings-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.settings-row .form-group { flex: 1; min-width: 200px; margin-bottom: 0; }
+
+/* Doc type tabs */
+.doc-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 1rem; }
+.doc-tab { padding: 12px 6px; background: white; border: 0.5px solid #e2e8f0; border-radius: 9px; font-size: 12px; font-weight: 500; color: #64748b; cursor: pointer; transition: all 0.15s; font-family: inherit; text-align: center; line-height: 1.4; }
+.doc-tab:hover { background: #f8fafc; }
+.doc-tab.active { background: #0d6e63; color: white; border-color: #0d6e63; box-shadow: 0 2px 8px rgba(13,110,99,0.2); }
+.doc-tab-icon { display: block; font-size: 18px; margin-bottom: 3px; }
+
+/* Form sections */
+.form-section { background: white; border-radius: 12px; border: 0.5px solid #e2e8f0; padding: 1.2rem 1.3rem; margin-bottom: 12px; }
+.form-section h3 { font-size: 14px; font-weight: 600; color: #1e3a5f; margin-bottom: 14px; padding-bottom: 9px; border-bottom: 0.5px solid #f1f5f9; display: flex; align-items: center; gap: 6px; }
+.form-section h3::before { content: ''; width: 3px; height: 14px; background: #0d6e63; border-radius: 99px; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid .full { grid-column: 1 / -1; }
+.form-group { margin-bottom: 12px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-label { font-size: 11.5px; font-weight: 500; color: #64748b; margin-bottom: 5px; display: block; letter-spacing: 0.02em; }
+.form-label .req { color: #dc2626; margin-left: 2px; }
+.form-label .opt { color: #cbd5e1; margin-left: 4px; font-weight: 400; font-size: 10px; }
+.form-input, .form-textarea, .form-select {
+  width: 100%; padding: 9px 11px; border: 0.5px solid #e2e8f0; border-radius: 7px;
+  font-size: 13.5px; font-family: inherit; color: #1a2332; background: #fafcff; transition: all 0.15s;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+  outline: none; border-color: #0d6e63; box-shadow: 0 0 0 2px rgba(13,110,99,0.1); background: white;
+}
+.form-textarea { resize: vertical; min-height: 60px; line-height: 1.6; }
+.form-textarea.tall { min-height: 90px; }
+
+/* Radio chips */
+.chip-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 6px 12px; border-radius: 99px; font-size: 12.5px; border: 0.5px solid #e2e8f0; cursor: pointer; background: white; color: #64748b; transition: all 0.12s; user-select: none; font-family: inherit; }
+.chip.selected { background: #0d6e63; color: white; border-color: #0d6e63; }
+.chip:hover:not(.selected) { background: #f8fafc; }
+
+/* Generate */
+.generate-btn {
+  width: 100%; padding: 14px 20px; background: linear-gradient(135deg, #b45309 0%, #0d6e63 100%); color: white; border: none; border-radius: 10px;
+  font-size: 15px; font-weight: 600; cursor: pointer; margin: 1rem 0; font-family: inherit;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 3px 12px rgba(180,83,9,0.2); transition: all 0.18s;
+}
+.generate-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(180,83,9,0.28); }
+.generate-btn:active { transform: translateY(0); }
+.generate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Output (handout style) */
+.output-section { background: white; border-radius: 12px; border: 0.5px solid #e2e8f0; padding: 1.2rem 1.3rem; margin-bottom: 1rem; }
+.output-section.hidden { display: none; }
+.output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 0.5px solid #f1f5f9; flex-wrap: wrap; gap: 8px; }
+.output-title { font-size: 14px; font-weight: 600; color: #1e3a5f; display: flex; align-items: center; gap: 6px; }
+.output-title::before { content: ''; width: 3px; height: 14px; background: #b45309; border-radius: 99px; }
+.output-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn-out { font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 0.5px solid #e2e8f0; background: white; cursor: pointer; color: #475569; font-family: inherit; display: flex; align-items: center; gap: 4px; }
+.btn-out:hover { background: #f8fafc; }
+.btn-out.primary { background: #fff7ed; border-color: #fdba74; color: #b45309; }
+.btn-out.primary:hover { background: #ffedd5; }
+
+/* Handout preview */
+#handout-preview {
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Times New Roman', serif;
+  font-size: 15px;
+  line-height: 2.0;
+  letter-spacing: 0.02em;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: #1a2332;
+  padding: 28px 32px;
+  background: #fefdfb;
+  border: 0.5px solid #ede4d3;
+  border-radius: 8px;
+  max-height: 700px;
+  overflow-y: auto;
+}
+#handout-preview:empty::before { content: '生成された説明書はここに表示されます。'; color: #94a3b8; font-style: italic; font-size: 13px; font-family: inherit; }
+
+/* Status banner */
+.status-banner { padding: 10px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.status-banner.error { background: #fef2f2; color: #991b1b; border: 0.5px solid #fecaca; }
+.status-banner.success { background: #ecfdf5; color: #065f46; border: 0.5px solid #a7f3d0; }
+
+.hidden { display: none !important; }
+.section-hint { font-size: 11px; color: #94a3b8; margin-top: -6px; margin-bottom: 10px; line-height: 1.6; }
+.tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 99px; background: #fef3c7; color: #92400e; font-weight: 500; margin-left: 6px; vertical-align: middle; }
+
+@media (max-width: 600px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .doc-tabs { grid-template-columns: repeat(2, 1fr); }
+  .doc-tab { padding: 10px 4px; font-size: 11px; }
+  #handout-preview { padding: 20px 18px; font-size: 14px; }
+}
+
+/* Print styles - only handout visible */
+@media print {
+  body { background: white; }
+  .header, .notice, .settings-panel, .doc-tabs, .form-section, .generate-btn, .output-header, #status-area, .btn-out { display: none !important; }
+  .output-section { border: none; box-shadow: none; padding: 0; margin: 0; }
+  #handout-preview { background: white; border: none; padding: 0; max-height: none; overflow: visible; font-size: 13pt; line-height: 1.9; }
+  .container { padding: 0; max-width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div>
+      <div class="header-title">📖 患者さん向け説明書AI</div>
+      <div class="header-sub">PATIENT EDUCATION HANDOUT GENERATOR</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="notice">
+    <b>⚠️ ご利用上の注意：</b>
+    本ツールは<b>説明文書のドラフト</b>を生成します。出力内容は必ず医師が確認・修正してから患者さんにお渡しください。
+    入力データはClaude APIに送信されます。<b>個人を特定する情報は含めないでください</b>。
+  </div>
+
+  <!-- Settings -->
+  <details class="settings-panel" id="settings-panel">
+    <summary>⚙️ API設定・クリニック情報</summary>
+    <div class="settings-body">
+      <div class="form-group">
+        <label class="form-label">Anthropic APIキー<span class="req">*</span></label>
+        <input type="password" class="form-input" id="api-key" placeholder="sk-ant-..." autocomplete="off">
+        <div class="section-hint">取得：<a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#0d6e63">console.anthropic.com</a> ／ 文書ドラフトAIで使用中のキーがそのまま使えます。</div>
+      </div>
+      <div class="settings-row">
+        <div class="form-group">
+          <label class="form-label">モデル</label>
+          <select class="form-select" id="model">
+            <option value="claude-sonnet-4-6">Claude Sonnet 4.6（推奨）</option>
+            <option value="claude-opus-4-7">Claude Opus 4.7（最高精度）</option>
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5（高速・低コスト）</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="form-group">
+          <label class="form-label">クリニック名<span class="opt">（説明書末尾に記載）</span></label>
+          <input class="form-input" id="clinic-name" placeholder="例：○○内科クリニック">
+        </div>
+        <div class="form-group">
+          <label class="form-label">医師名<span class="opt">（説明書末尾に記載）</span></label>
+          <input class="form-input" id="doctor-name" placeholder="例：山田 太郎">
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- Doc type tabs -->
+  <div class="doc-tabs">
+    <button class="doc-tab active" data-doc="disease" onclick="switchDoc('disease')">
+      <span class="doc-tab-icon">🩺</span>病気の説明
+    </button>
+    <button class="doc-tab" data-doc="treatment" onclick="switchDoc('treatment')">
+      <span class="doc-tab-icon">💊</span>治療・処方
+    </button>
+    <button class="doc-tab" data-doc="test" onclick="switchDoc('test')">
+      <span class="doc-tab-icon">🔬</span>検査
+    </button>
+    <button class="doc-tab" data-doc="lifestyle" onclick="switchDoc('lifestyle')">
+      <span class="doc-tab-icon">🥗</span>生活指導
+    </button>
+    <button class="doc-tab" data-doc="warning" onclick="switchDoc('warning')">
+      <span class="doc-tab-icon">🚨</span>受診の目安
+    </button>
+  </div>
+
+  <!-- Audience profile -->
+  <section class="form-section">
+    <h3>読み手のプロフィール</h3>
+    <div class="form-group">
+      <label class="form-label">読み手</label>
+      <div class="chip-group" id="audience-chips">
+        <div class="chip selected" data-val="患者さんご本人">患者さんご本人</div>
+        <div class="chip" data-val="ご家族">ご家族</div>
+        <div class="chip" data-val="ご本人とご家族の両方">ご本人とご家族</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">年齢層</label>
+      <div class="chip-group" id="age-chips">
+        <div class="chip" data-val="お子さま（15歳未満）">お子さま</div>
+        <div class="chip selected" data-val="成人">成人</div>
+        <div class="chip" data-val="高齢者（75歳以上）">高齢者</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">読みやすさのレベル</label>
+      <div class="chip-group" id="level-chips">
+        <div class="chip" data-val="やさしい（小学校高学年でも理解できる平易な言葉のみ）">やさしい</div>
+        <div class="chip selected" data-val="標準（一般的な言葉を使い、専門用語は補足説明付き）">標準</div>
+        <div class="chip" data-val="やや詳しく（医学用語も使うが平易に補足）">やや詳しく</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">患者さんのお名前<span class="opt">（任意。説明書の宛名に使われます）</span></label>
+      <input class="form-input" id="patient-name" placeholder="例：山田 太郎">
+    </div>
+  </section>
+
+  <!-- 病気の説明 -->
+  <div id="disease-fields">
+    <section class="form-section">
+      <h3>病気の情報</h3>
+      <div class="form-group">
+        <label class="form-label">病名（医学用語で可）<span class="req">*</span></label>
+        <input class="form-input" id="d-name" placeholder="例：2型糖尿病、慢性心不全、高血圧症">
+      </div>
+      <div class="form-group">
+        <label class="form-label">この病気の特徴・状態<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="d-overview" placeholder="例：血糖値が高い状態が続く病気。インスリンの働きが弱くなることで起こる。"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">原因・誘因<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="d-cause" placeholder="例：遺伝、食生活、運動不足、肥満、加齢など"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">主な症状<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="d-symptoms" placeholder="例：のどの渇き、頻尿、疲れやすさ、体重減少"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">経過・今後の見通し<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="d-prognosis" placeholder="例：適切な治療で血糖値を安定させ、合併症を防ぐことができる。長期的な管理が大切。"></textarea>
+      </div>
+    </section>
+  </div>
+
+  <!-- 治療・処方 -->
+  <div id="treatment-fields" class="hidden">
+    <section class="form-section">
+      <h3>処方・治療の内容</h3>
+      <div class="form-group">
+        <label class="form-label">病名<span class="req">*</span></label>
+        <input class="form-input" id="t-condition" placeholder="例：高血圧症">
+      </div>
+      <div class="form-group">
+        <label class="form-label">処方薬・用法用量<span class="req">*</span></label>
+        <textarea class="form-textarea tall" id="t-meds" placeholder="例：&#10;・アムロジピン 5mg 朝食後1錠&#10;・カンデサルタン 8mg 朝食後1錠"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">治療の目的<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="t-purpose" placeholder="例：血圧を下げて、脳卒中や心筋梗塞のリスクを減らす"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">起こりうる副作用<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="t-side" placeholder="例：めまい、ふらつき、足のむくみ、咳"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">注意事項・伝えるべきこと<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="t-caution" placeholder="例：飲み忘れたら気づいた時にすぐ。2回分まとめて飲まない。自己判断で中止しない。"></textarea>
+      </div>
+    </section>
+  </div>
+
+  <!-- 検査 -->
+  <div id="test-fields" class="hidden">
+    <section class="form-section">
+      <h3>検査の内容</h3>
+      <div class="form-group">
+        <label class="form-label">検査名<span class="req">*</span></label>
+        <input class="form-input" id="x-name" placeholder="例：上部消化管内視鏡検査（胃カメラ）">
+      </div>
+      <div class="form-group">
+        <label class="form-label">検査の目的<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="x-purpose" placeholder="例：胃や食道の粘膜を直接見て、炎症や腫瘍がないかを調べる"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">検査の方法・流れ<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="x-method" placeholder="例：鼻または口から細いカメラを入れて観察。約10〜15分。鎮静剤の使用も可能。"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">検査前・当日の注意<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="x-prep" placeholder="例：前日21時以降は絶食。当日朝の水分は少量可。常用薬は医師に相談。"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">結果が出るまで・その後の流れ<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="x-result" placeholder="例：当日に医師から説明あり。組織検査をした場合は1〜2週間後に結果説明。"></textarea>
+      </div>
+    </section>
+  </div>
+
+  <!-- 生活指導 -->
+  <div id="lifestyle-fields" class="hidden">
+    <section class="form-section">
+      <h3>生活上の指導内容</h3>
+      <div class="form-group">
+        <label class="form-label">対象となる病名・状態<span class="req">*</span></label>
+        <input class="form-input" id="l-condition" placeholder="例：脂質異常症、心不全、糖尿病">
+      </div>
+      <div class="form-group">
+        <label class="form-label">食事の注意<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="l-diet" placeholder="例：塩分は1日6g以下、野菜を毎食、揚げ物・加工食品は控えめに"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">運動・活動<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="l-exercise" placeholder="例：1日30分のウォーキングを週5日以上。無理のない範囲で。"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">日常生活の注意<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="l-daily" placeholder="例：禁煙、節酒（1日純アルコール20g以下）、十分な睡眠、ストレス管理"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">避けるべきこと<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="l-avoid" placeholder="例：激しい運動、過度の飲酒、長時間の入浴、サウナ"></textarea>
+      </div>
+    </section>
+  </div>
+
+  <!-- 受診の目安 -->
+  <div id="warning-fields" class="hidden">
+    <section class="form-section">
+      <h3>受診の目安</h3>
+      <div class="form-group">
+        <label class="form-label">対象となる病名・状態<span class="req">*</span></label>
+        <input class="form-input" id="w-condition" placeholder="例：慢性心不全、糖尿病、COPD">
+      </div>
+      <div class="form-group">
+        <label class="form-label">すぐに救急受診すべき症状<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="w-urgent" placeholder="例：胸痛、強い息切れ、意識がもうろうとする、急な体重増加（数日で2kg以上）"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">早めの受診を勧める症状<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="w-early" placeholder="例：足のむくみが続く、夜中に咳で目が覚める、いつもより疲れやすい"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">次回受診まで様子を見て良い症状<span class="opt">（任意）</span></label>
+        <textarea class="form-textarea" id="w-watch" placeholder="例：軽い倦怠感、軽度の食欲不振、たまにある軽い動悸"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">連絡先<span class="opt">（任意）</span></label>
+        <input class="form-input" id="w-contact" placeholder="例：当院 03-1234-5678（夜間・休日は救急外来へ）">
+      </div>
+    </section>
+  </div>
+
+  <!-- 追加配慮 -->
+  <section class="form-section">
+    <h3>追加の配慮事項</h3>
+    <div class="form-group">
+      <label class="form-label">患者さんが特に心配されていること<span class="opt">（任意）</span></label>
+      <textarea class="form-textarea" id="concerns" placeholder="例：副作用が怖い、仕事に支障が出ないか心配、家族にうつる病気か気にしている"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">特に強調したいポイント<span class="opt">（任意）</span></label>
+      <textarea class="form-textarea" id="emphasis" placeholder="例：服薬の継続が最重要、定期的な血圧測定を習慣に、無理のない範囲で続けることが大切"></textarea>
+    </div>
+  </section>
+
+  <button class="generate-btn" id="gen-btn" onclick="generate()">
+    <span id="gen-btn-label">✨ 説明書を生成</span>
+  </button>
+
+  <div id="status-area"></div>
+
+  <!-- Output -->
+  <section class="output-section hidden" id="output-section">
+    <div class="output-header">
+      <div class="output-title">生成された説明書<span class="tag">AI</span></div>
+      <div class="output-actions">
+        <button class="btn-out primary" onclick="printOutput()">🖨️ 印刷</button>
+        <button class="btn-out" onclick="copyOutput()">📋 コピー</button>
+        <button class="btn-out" onclick="downloadOutput()">⬇ DL</button>
+        <button class="btn-out" onclick="generate()">🔄 再生成</button>
+      </div>
+    </div>
+    <div id="handout-preview"></div>
+  </section>
+
+</div>
+
+<script>
+let currentDoc = 'disease';
+const STORAGE_KEY = 'pteach_form_v1';
+const API_KEY_STORE = 'mdoc_api_key'; // share key with medical-doc-ai
+
+const ALL_FIELD_IDS = [
+  'api-key','model','clinic-name','doctor-name','patient-name',
+  'd-name','d-overview','d-cause','d-symptoms','d-prognosis',
+  't-condition','t-meds','t-purpose','t-side','t-caution',
+  'x-name','x-purpose','x-method','x-prep','x-result',
+  'l-condition','l-diet','l-exercise','l-daily','l-avoid',
+  'w-condition','w-urgent','w-early','w-watch','w-contact',
+  'concerns','emphasis'
+];
+
+// ── Persistence ──────────────────────────────
+function saveForm() {
+  const data = { _doc: currentDoc };
+  ALL_FIELD_IDS.forEach(id => {
+    if (id === 'api-key') return;
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  // Save chip selections
+  data._aud = getChipVal('audience-chips');
+  data._age = getChipVal('age-chips');
+  data._lv  = getChipVal('level-chips');
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const k = document.getElementById('api-key').value;
+  if (k) localStorage.setItem(API_KEY_STORE, k);
+}
+function loadForm() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+      Object.entries(data).forEach(([id, val]) => {
+        if (id.startsWith('_')) return;
+        const el = document.getElementById(id);
+        if (el && val) el.value = val;
+      });
+      if (data._doc) switchDoc(data._doc);
+      if (data._aud) setChipVal('audience-chips', data._aud);
+      if (data._age) setChipVal('age-chips', data._age);
+      if (data._lv)  setChipVal('level-chips', data._lv);
+    } catch (e) {}
+  }
+  const k = localStorage.getItem(API_KEY_STORE);
+  if (k) document.getElementById('api-key').value = k;
+}
+
+// ── Chip handling ────────────────────────────
+function setupChips() {
+  document.querySelectorAll('.chip-group').forEach(group => {
+    group.addEventListener('click', e => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      group.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      saveForm();
+    });
+  });
+}
+function getChipVal(groupId) {
+  const el = document.querySelector(`#${groupId} .chip.selected`);
+  return el ? el.dataset.val : '';
+}
+function setChipVal(groupId, val) {
+  document.querySelectorAll(`#${groupId} .chip`).forEach(c => {
+    c.classList.toggle('selected', c.dataset.val === val);
+  });
+}
+
+// Auto-save on input
+ALL_FIELD_IDS.forEach(id => {
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener('input', saveForm); el.addEventListener('change', saveForm); }
+  });
+});
+
+// ── Tab switching ────────────────────────────
+const DOC_FIELDS = {
+  disease: 'disease-fields',
+  treatment: 'treatment-fields',
+  test: 'test-fields',
+  lifestyle: 'lifestyle-fields',
+  warning: 'warning-fields'
+};
+
+function switchDoc(type) {
+  currentDoc = type;
+  document.querySelectorAll('.doc-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.doc === type);
+  });
+  Object.entries(DOC_FIELDS).forEach(([key, fieldsId]) => {
+    document.getElementById(fieldsId).classList.toggle('hidden', key !== type);
+  });
+  saveForm();
+}
+
+// ── Helpers ──────────────────────────────────
+function val(id) { return (document.getElementById(id)?.value || '').trim(); }
+function todayJP() {
+  const d = new Date();
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+
+// ── Prompt builders ──────────────────────────
+const BASE_INSTRUCTIONS = `あなたは医療従事者として、患者さんとそのご家族向けの説明書を作成します。
+
+【作成の基本方針（必ず守ってください）】
+1. **平易な日本語**を使う。医学用語は必要最小限にし、使う場合は必ず「（〜という意味です）」のように補足説明を付ける。
+2. **温かみのある丁寧な語り口**（です・ます調）。患者さんが不安にならない表現を心がける。
+3. 段落は短く、**箇条書きを積極活用**して読みやすく。
+4. 重要な点は「**◆ ポイント**」や「⚠ 注意」などのマーカーで強調する。
+5. 患者さんの自己判断を促さない。「気になる症状があれば医師にご相談ください」など適切な促しを入れる。
+6. 嘘や創作はしない。情報が不足している項目は、無理に膨らませず、医師が後で書き足せるようシンプルに留める。
+7. 説明書のタイトルを冒頭に置く。
+8. 末尾に「もしご不明な点があれば〜」のような相談促しと、クリニック名・医師名・発行日を入れる。
+9. 全体の長さはA4 1枚程度（500〜900文字程度）を目安に。`;
+
+function buildPrompt() {
+  const aud = getChipVal('audience-chips');
+  const age = getChipVal('age-chips');
+  const lv  = getChipVal('level-chips');
+  const patientName = val('patient-name');
+  const clinic = val('clinic-name');
+  const doctor = val('doctor-name');
+
+  const readerProfile = `
+【読み手のプロフィール】
+読み手：${aud}
+年齢層：${age}
+読みやすさのレベル：${lv}
+${patientName ? `患者さんのお名前：${patientName} さま（説明書の冒頭で呼びかけてください）` : ''}`;
+
+  let docSpecific = '';
+  let docType = '';
+
+  if (currentDoc === 'disease') {
+    docType = '【作成する説明書】病気の説明書';
+    docSpecific = `
+【内容】
+病名：${val('d-name')}
+この病気の特徴：${val('d-overview') || '（情報なし）'}
+原因・誘因：${val('d-cause') || '（情報なし）'}
+主な症状：${val('d-symptoms') || '（情報なし）'}
+経過・今後の見通し：${val('d-prognosis') || '（情報なし）'}
+
+【推奨される説明書の構成】
+① タイトル（例：「${val('d-name')}について」）
+② 「〜さまへ」の呼びかけ
+③ どんな病気ですか
+④ なぜ起こるのですか
+⑤ どんな症状が出ますか
+⑥ これからの見通し
+⑦ 「ご不明な点があればいつでもご相談ください」の一文`;
+  } else if (currentDoc === 'treatment') {
+    docType = '【作成する説明書】お薬・治療の説明書';
+    docSpecific = `
+【内容】
+病名：${val('t-condition')}
+処方薬・用法用量：
+${val('t-meds')}
+治療の目的：${val('t-purpose') || '（情報なし）'}
+起こりうる副作用：${val('t-side') || '（情報なし）'}
+注意事項：${val('t-caution') || '（情報なし）'}
+
+【推奨される説明書の構成】
+① タイトル（例：「お薬について」）
+② 「〜さまへ」の呼びかけ
+③ どうしてこのお薬を飲むのですか（目的）
+④ お薬の飲み方（用法用量を箇条書きで）
+⑤ 起こりうる副作用と対処
+⑥ 飲み忘れた時の対応・注意事項
+⑦ 「副作用が気になる時は自己判断で中止せず、ご相談ください」の一文`;
+  } else if (currentDoc === 'test') {
+    docType = '【作成する説明書】検査の説明書';
+    docSpecific = `
+【内容】
+検査名：${val('x-name')}
+検査の目的：${val('x-purpose') || '（情報なし）'}
+検査の方法・流れ：${val('x-method') || '（情報なし）'}
+検査前・当日の注意：${val('x-prep') || '（情報なし）'}
+結果が出るまで・その後の流れ：${val('x-result') || '（情報なし）'}
+
+【推奨される説明書の構成】
+① タイトル（例：「${val('x-name')}について」）
+② 「〜さまへ」の呼びかけ
+③ この検査は何を調べるのですか（目的）
+④ どのように行いますか（流れ・所要時間）
+⑤ 検査の前にお願いしたいこと
+⑥ 検査当日のお願い
+⑦ 結果が出るまでとその後
+⑧ 「ご心配な点があればお知らせください」の一文`;
+  } else if (currentDoc === 'lifestyle') {
+    docType = '【作成する説明書】生活上の注意（療養指導）';
+    docSpecific = `
+【内容】
+対象となる病名・状態：${val('l-condition')}
+食事の注意：${val('l-diet') || '（情報なし）'}
+運動・活動：${val('l-exercise') || '（情報なし）'}
+日常生活の注意：${val('l-daily') || '（情報なし）'}
+避けるべきこと：${val('l-avoid') || '（情報なし）'}
+
+【推奨される説明書の構成】
+① タイトル（例：「${val('l-condition')}と上手につきあうために」）
+② 「〜さまへ」の呼びかけと前向きな導入
+③ 食事で気をつけたいこと（箇条書き）
+④ 運動・からだを動かすこと（無理のない範囲で）
+⑤ 日常生活で意識したいこと
+⑥ 避けたいこと
+⑦ 「焦らず、できることから始めましょう」のような励まし
+⑧ 「気になることがあればいつでもご相談ください」の一文`;
+  } else if (currentDoc === 'warning') {
+    docType = '【作成する説明書】受診の目安';
+    docSpecific = `
+【内容】
+対象となる病名・状態：${val('w-condition')}
+すぐに救急受診すべき症状：${val('w-urgent') || '（情報なし）'}
+早めの受診を勧める症状：${val('w-early') || '（情報なし）'}
+様子を見て良い症状：${val('w-watch') || '（情報なし）'}
+連絡先：${val('w-contact') || '（要記載）'}
+
+【推奨される説明書の構成】
+① タイトル（例：「${val('w-condition')}　受診のタイミングについて」）
+② 「〜さまへ」の呼びかけ
+③ 🚨【すぐに救急車・救急受診を】の症状一覧
+④ ⚠【早めに当院へご連絡を】の症状一覧
+⑤ ✓【次回の受診まで様子を見て良い】症状一覧
+⑥ 連絡先・夜間休日の対応
+⑦ 「迷ったらまずはご連絡を」のメッセージ`;
+  }
+
+  const additional = `
+【追加の配慮事項】
+患者さんの心配ごと：${val('concerns') || 'なし'}
+特に強調したいポイント：${val('emphasis') || 'なし'}`;
+
+  const footer = `
+【末尾に記載する情報】
+発行日：${todayJP()}
+クリニック名：${clinic || '（要確認）'}
+担当医師：${doctor || '（要確認）'}`;
+
+  return `${BASE_INSTRUCTIONS}
+
+${docType}
+${readerProfile}
+${docSpecific}
+${additional}
+${footer}
+
+【最終指示】
+- 上記の構成案は参考であり、入力された情報量に応じて適宜調整してください。
+- 情報が空欄の項目は無理に書こうとせず、簡潔に留めるか省略してください。
+- 出力は説明書の本文のみ。前置きや解説は不要です。
+- 段落間は1行空けて読みやすくしてください。
+- 重要な箇所には絵文字（◆ ⚠ ✓ 🚨 など）を効果的に使ってください。`;
+}
+
+// ── Generate ─────────────────────────────────
+async function generate() {
+  saveForm();
+  const apiKey = val('api-key');
+  if (!apiKey) {
+    showStatus('error', 'APIキーが設定されていません。「⚙️ API設定」を開いて入力してください。');
+    document.getElementById('settings-panel').open = true;
+    return;
+  }
+
+  // Validation by doc type
+  const requiredByDoc = {
+    disease:   ['d-name'],
+    treatment: ['t-condition', 't-meds'],
+    test:      ['x-name'],
+    lifestyle: ['l-condition'],
+    warning:   ['w-condition']
+  };
+  for (const id of requiredByDoc[currentDoc]) {
+    if (!val(id)) {
+      showStatus('error', '必須項目が入力されていません。');
+      document.getElementById(id).focus();
+      return;
+    }
+  }
+
+  const prompt = buildPrompt();
+  const model = val('model') || 'claude-sonnet-4-6';
+
+  const btn = document.getElementById('gen-btn');
+  const label = document.getElementById('gen-btn-label');
+  btn.disabled = true;
+  label.innerHTML = '<span class="spinner"></span> 生成中...（5〜15秒）';
+  clearStatus();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 2500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      let msg = `APIエラー（${res.status}）`;
+      if (res.status === 401) msg = 'APIキーが無効です。';
+      else if (res.status === 429) msg = 'リクエスト制限。しばらく待って再試行してください。';
+      else if (res.status === 400) msg = 'リクエスト形式エラー。';
+      else if (res.status === 529) msg = 'API側が混雑中。少し待って再試行を。';
+      throw new Error(`${msg}\n${errText.slice(0, 300)}`);
+    }
+
+    const data = await res.json();
+    const text = (data.content || []).map(c => c.type === 'text' ? c.text : '').join('\n').trim();
+    if (!text) throw new Error('応答が空でした。');
+
+    document.getElementById('handout-preview').textContent = text;
+    document.getElementById('output-section').classList.remove('hidden');
+    showStatus('success', `✓ 生成完了（${text.length}文字）`);
+    document.getElementById('output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    showStatus('error', '✗ 生成に失敗しました：' + err.message);
+  } finally {
+    btn.disabled = false;
+    label.textContent = '✨ 説明書を生成';
+  }
+}
+
+// ── Output actions ───────────────────────────
+function copyOutput() {
+  const text = document.getElementById('handout-preview').textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    showStatus('success', '✓ クリップボードにコピーしました');
+    setTimeout(clearStatus, 2500);
+  }).catch(() => showStatus('error', 'コピーに失敗しました'));
+}
+
+function downloadOutput() {
+  const text = document.getElementById('handout-preview').textContent;
+  if (!text) return;
+  const docLabel = { disease:'病気の説明', treatment:'お薬の説明', test:'検査の説明', lifestyle:'生活指導', warning:'受診の目安' }[currentDoc];
+  const patient = val('patient-name') || 'patient';
+  const date = new Date().toISOString().slice(0,10);
+  const blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${docLabel}_${patient}_${date}.txt`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function printOutput() {
+  if (!document.getElementById('handout-preview').textContent) return;
+  window.print();
+}
+
+// ── Status banner ────────────────────────────
+function showStatus(type, msg) {
+  document.getElementById('status-area').innerHTML = `<div class="status-banner ${type}">${msg}</div>`;
+}
+function clearStatus() {
+  document.getElementById('status-area').innerHTML = '';
+}
+
+// ── Init ─────────────────────────────────────
+setupChips();
+loadForm();
+if (!val('api-key')) {
+  document.getElementById('settings-panel').open = true;
+}
+</script>
+</body>
+</html>
